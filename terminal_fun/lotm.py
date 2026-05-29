@@ -1,9 +1,9 @@
 import os
 import sys
 import time
-import requests
+import gdown
 
-VIDEO_URL = "https://drive.google.com/uc?export=download&id=170bTYQXHwmf289bGKG0PDo7c1EmViyWX"
+VIDEO_ID = "170bTYQXHwmf289bGKG0PDo7c1EmViyWX"
 VIDEO_FILENAME = os.path.expanduser("~/.lotm_trailer.mp4")
 
 ASCII_CHARS = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"]
@@ -18,26 +18,21 @@ def download_video():
     print("Downloading video...")
 
     try:
-        r = requests.get(VIDEO_URL, stream=True, allow_redirects=True)
-        r.raise_for_status()
+        gdown.download(
+            id=VIDEO_ID,
+            output=VIDEO_FILENAME,
+            quiet=False,
+            fuzzy=True
+        )
 
-        with open(VIDEO_FILENAME, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-
-        with open(VIDEO_FILENAME, "rb") as f:
-            header = f.read(512)
-
-        if b"<html" in header.lower():
-            print("Google Drive returned a webpage instead of the video.")
-            os.remove(VIDEO_FILENAME)
+        if not os.path.exists(VIDEO_FILENAME):
+            print("Download failed.")
             sys.exit(1)
 
         print("Download complete.")
 
     except Exception as e:
-        print("Download failed:", e)
+        print(f"Download failed: {e}")
         sys.exit(1)
 
 
@@ -46,8 +41,9 @@ def run_lotm():
         import cv2
         import numpy as np
     except ImportError:
-        print("Install dependencies:")
-        print("pip install opencv-python numpy requests")
+        print("Missing dependencies.")
+        print("Install with:")
+        print("pip install gdown numpy opencv-python")
         sys.exit(1)
 
     download_video()
@@ -59,19 +55,22 @@ def run_lotm():
         sys.exit(1)
 
     fps = cap.get(cv2.CAP_PROP_FPS)
+
     if fps <= 0:
         fps = 30
 
     frame_duration = 1.0 / fps
 
     try:
-        columns, lines = os.get_terminal_size()
+        columns, _ = os.get_terminal_size()
     except OSError:
-        columns, lines = 80, 24
+        columns = 80
 
     width = min(columns - 2, 100)
 
-    sys.stdout.write("\033[2J\033[H\033[?25l")
+    sys.stdout.write("\033[2J")
+    sys.stdout.write("\033[H")
+    sys.stdout.write("\033[?25l")
     sys.stdout.flush()
 
     try:
@@ -81,14 +80,22 @@ def run_lotm():
             if not ret:
                 break
 
-            start = time.time()
+            start_time = time.time()
 
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
             h, w = gray.shape
-            target_height = max(1, int(width * (h / w) * 0.5))
+            aspect_ratio = h / w
 
-            resized = cv2.resize(gray, (width, target_height))
+            target_height = max(
+                1,
+                int(width * aspect_ratio * 0.5)
+            )
+
+            resized = cv2.resize(
+                gray,
+                (width, target_height)
+            )
 
             indices = (
                 resized.astype(float)
@@ -104,7 +111,7 @@ def run_lotm():
             sys.stdout.write("\033[H" + ascii_frame)
             sys.stdout.flush()
 
-            elapsed = time.time() - start
+            elapsed = time.time() - start_time
 
             if elapsed < frame_duration:
                 time.sleep(frame_duration - elapsed)
@@ -114,7 +121,10 @@ def run_lotm():
 
     finally:
         cap.release()
-        sys.stdout.write("\033[?25h\033[2J\033[H")
+
+        sys.stdout.write("\033[?25h")
+        sys.stdout.write("\033[2J")
+        sys.stdout.write("\033[H")
         sys.stdout.flush()
 
 
