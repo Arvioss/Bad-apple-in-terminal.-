@@ -19,5 +19,5 @@ pip install -e .
 - Python 3
 - `numpy`
 - `opencv-python`
-
+- gdown
 Enjoy!
