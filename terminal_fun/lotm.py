@@ -2,32 +2,33 @@ import os
 import sys
 import time
 import gdown
+import cv2
+import numpy as np
 
 VIDEO_ID = "170bTYQXHwmf289bGKG0PDo7c1EmViyWX"
 VIDEO_FILENAME = os.path.expanduser("~/.lotm_trailer.mp4")
 
-ASCII_CHARS = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"]
+ASCII_CHARS = " .:-=+*#%@"
 
 
 def download_video():
     if os.path.exists(VIDEO_FILENAME):
-        if os.path.getsize(VIDEO_FILENAME) > 1024 * 1024:
-            return
-        os.remove(VIDEO_FILENAME)
+        try:
+            if os.path.getsize(VIDEO_FILENAME) > 10_000_000:
+                return
+            os.remove(VIDEO_FILENAME)
+        except:
+            pass
 
     print("Downloading video...")
 
+    url = f"https://drive.google.com/uc?id={VIDEO_ID}"
+
     try:
-        gdown.download(
-            id=VIDEO_ID,
-            output=VIDEO_FILENAME,
-            quiet=False,
-            fuzzy=True
-        )
+        gdown.download(url, VIDEO_FILENAME, quiet=False)
 
         if not os.path.exists(VIDEO_FILENAME):
-            print("Download failed.")
-            sys.exit(1)
+            raise RuntimeError("Video was not downloaded.")
 
         print("Download complete.")
 
@@ -36,16 +37,29 @@ def download_video():
         sys.exit(1)
 
 
-def run_lotm():
-    try:
-        import cv2
-        import numpy as np
-    except ImportError:
-        print("Missing dependencies.")
-        print("Install with:")
-        print("pip install gdown numpy opencv-python")
-        sys.exit(1)
+def frame_to_ascii(frame, width):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+    h, w = gray.shape
+    aspect_ratio = h / w
+
+    height = max(1, int(width * aspect_ratio * 0.5))
+
+    resized = cv2.resize(gray, (width, height))
+
+    ascii_frame = []
+
+    for row in resized:
+        line = "".join(
+            ASCII_CHARS[pixel * (len(ASCII_CHARS) - 1) // 255]
+            for pixel in row
+        )
+        ascii_frame.append(line)
+
+    return "\n".join(ascii_frame)
+
+
+def run_lotm():
     download_video()
 
     cap = cv2.VideoCapture(VIDEO_FILENAME)
@@ -59,73 +73,43 @@ def run_lotm():
     if fps <= 0:
         fps = 30
 
-    frame_duration = 1.0 / fps
+    frame_delay = 1.0 / fps
 
     try:
-        columns, _ = os.get_terminal_size()
-    except OSError:
-        columns = 80
+        terminal_width = os.get_terminal_size().columns
+    except:
+        terminal_width = 80
 
-    width = min(columns - 2, 100)
+    width = min(terminal_width - 2, 100)
 
-    sys.stdout.write("\033[2J")
-    sys.stdout.write("\033[H")
-    sys.stdout.write("\033[?25l")
-    sys.stdout.flush()
+    print("\033[2J\033[H", end="")
+    print("\033[?25l", end="")
 
     try:
         while True:
+            start = time.time()
+
             ret, frame = cap.read()
 
             if not ret:
                 break
 
-            start_time = time.time()
+            ascii_art = frame_to_ascii(frame, width)
 
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            print("\033[H" + ascii_art, end="", flush=True)
 
-            h, w = gray.shape
-            aspect_ratio = h / w
+            elapsed = time.time() - start
 
-            target_height = max(
-                1,
-                int(width * aspect_ratio * 0.5)
-            )
-
-            resized = cv2.resize(
-                gray,
-                (width, target_height)
-            )
-
-            indices = (
-                resized.astype(float)
-                / 255
-                * (len(ASCII_CHARS) - 1)
-            ).astype(int)
-
-            ascii_frame = "\n".join(
-                "".join(ASCII_CHARS[i] for i in row)
-                for row in indices
-            )
-
-            sys.stdout.write("\033[H" + ascii_frame)
-            sys.stdout.flush()
-
-            elapsed = time.time() - start_time
-
-            if elapsed < frame_duration:
-                time.sleep(frame_duration - elapsed)
+            if elapsed < frame_delay:
+                time.sleep(frame_delay - elapsed)
 
     except KeyboardInterrupt:
         pass
 
     finally:
         cap.release()
-
-        sys.stdout.write("\033[?25h")
-        sys.stdout.write("\033[2J")
-        sys.stdout.write("\033[H")
-        sys.stdout.flush()
+        print("\033[?25h")
+        print("\033[2J\033[H", end="")
 
 
 if __name__ == "__main__":
