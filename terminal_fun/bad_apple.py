@@ -4,7 +4,7 @@ import sys
 import urllib.request
 
 # Global configuration
-VIDEO_URL = "https://github.com/userElaina/Bad-Apple/raw/master/badapple.mp4"
+VIDEO_URL = "https://github.com/bad-apple-lab/Bad-Apple/raw/main/badapple.mp4"
 VIDEO_FILENAME = os.path.expanduser("~/.bad_apple.mp4")
 ASCII_CHARS = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"]
 
