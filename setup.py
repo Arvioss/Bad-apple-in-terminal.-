@@ -14,6 +14,6 @@ setup(
             "bad-apple=terminal_fun.bad_apple:run_bad_apple",
         ],
     },
-    author="Gemini CLI",
-    description="Terminal animations: Donut and Bad Apple",
+    author="Arvioss",
+    description="Terminal animation:funni :)",
 )
