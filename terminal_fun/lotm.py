@@ -1,9 +1,9 @@
 import os
-import time
 import sys
-import urllib.request
+import time
+import requests
 
-VIDEO_URL = "https://media.githubusercontent.com/media/Arvioss/Lotm/main/videoplayback.mp4"
+VIDEO_URL = "https://drive.google.com/uc?export=download&id=170bTYQXHwmf289bGKG0PDo7c1EmViyWX"
 VIDEO_FILENAME = os.path.expanduser("~/.lotm_trailer.mp4")
 
 ASCII_CHARS = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"]
@@ -11,34 +11,26 @@ ASCII_CHARS = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"]
 
 def download_video():
     if os.path.exists(VIDEO_FILENAME):
-        try:
-            with open(VIDEO_FILENAME, "rb") as f:
-                header = f.read(100)
+        if os.path.getsize(VIDEO_FILENAME) > 1024 * 1024:
+            return
+        os.remove(VIDEO_FILENAME)
 
-            if b"git-lfs.github.com/spec" not in header:
-                return
-
-            os.remove(VIDEO_FILENAME)
-
-        except Exception:
-            pass
+    print("Downloading video...")
 
     try:
-        print("Downloading video...")
+        r = requests.get(VIDEO_URL, stream=True, allow_redirects=True)
+        r.raise_for_status()
 
-        opener = urllib.request.build_opener()
-        opener.addheaders = [
-            ("User-Agent", "Mozilla/5.0")
-        ]
-        urllib.request.install_opener(opener)
-
-        urllib.request.urlretrieve(VIDEO_URL, VIDEO_FILENAME)
+        with open(VIDEO_FILENAME, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
 
         with open(VIDEO_FILENAME, "rb") as f:
-            header = f.read(100)
+            header = f.read(512)
 
-        if b"git-lfs.github.com/spec" in header:
-            print("Downloaded Git LFS pointer instead of video.")
+        if b"<html" in header.lower():
+            print("Google Drive returned a webpage instead of the video.")
             os.remove(VIDEO_FILENAME)
             sys.exit(1)
 
@@ -54,9 +46,8 @@ def run_lotm():
         import cv2
         import numpy as np
     except ImportError:
-        print("Missing dependencies.")
-        print("Install with:")
-        print("pip install opencv-python numpy")
+        print("Install dependencies:")
+        print("pip install opencv-python numpy requests")
         sys.exit(1)
 
     download_video()
@@ -71,7 +62,7 @@ def run_lotm():
     if fps <= 0:
         fps = 30
 
-    frame_duration = 1 / fps
+    frame_duration = 1.0 / fps
 
     try:
         columns, lines = os.get_terminal_size()
@@ -80,9 +71,7 @@ def run_lotm():
 
     width = min(columns - 2, 100)
 
-    sys.stdout.write("\033[2J")
-    sys.stdout.write("\033[H")
-    sys.stdout.write("\033[?25l")
+    sys.stdout.write("\033[2J\033[H\033[?25l")
     sys.stdout.flush()
 
     try:
@@ -92,22 +81,14 @@ def run_lotm():
             if not ret:
                 break
 
-            start_time = time.time()
+            start = time.time()
 
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
             h, w = gray.shape
-            aspect_ratio = h / w
+            target_height = max(1, int(width * (h / w) * 0.5))
 
-            target_height = max(
-                1,
-                int(width * aspect_ratio * 0.5)
-            )
-
-            resized = cv2.resize(
-                gray,
-                (width, target_height)
-            )
+            resized = cv2.resize(gray, (width, target_height))
 
             indices = (
                 resized.astype(float)
@@ -115,20 +96,15 @@ def run_lotm():
                 * (len(ASCII_CHARS) - 1)
             ).astype(int)
 
-            ascii_lines = [
-                "".join(
-                    ASCII_CHARS[i]
-                    for i in row
-                )
+            ascii_frame = "\n".join(
+                "".join(ASCII_CHARS[i] for i in row)
                 for row in indices
-            ]
+            )
 
-            output = "\033[H" + "\n".join(ascii_lines)
-
-            sys.stdout.write(output)
+            sys.stdout.write("\033[H" + ascii_frame)
             sys.stdout.flush()
 
-            elapsed = time.time() - start_time
+            elapsed = time.time() - start
 
             if elapsed < frame_duration:
                 time.sleep(frame_duration - elapsed)
@@ -138,10 +114,7 @@ def run_lotm():
 
     finally:
         cap.release()
-
-        sys.stdout.write("\033[?25h")
-        sys.stdout.write("\033[2J")
-        sys.stdout.write("\033[H")
+        sys.stdout.write("\033[?25h\033[2J\033[H")
         sys.stdout.flush()
 
 
