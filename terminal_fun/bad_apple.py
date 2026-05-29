@@ -6,13 +6,12 @@ import urllib.request
 # Global configuration
 VIDEO_URL = "https://github.com/bad-apple-lab/Bad-Apple/raw/main/badapple.mp4"
 VIDEO_FILENAME = os.path.expanduser("~/.bad_apple.mp4")
-ASCII_CHARS = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"]
+ASCII_CHARS = ["1","0"]
 
 def download_video():
     if not os.path.exists(VIDEO_FILENAME):
         print(f"Downloading Bad Apple video (~5MB) to {VIDEO_FILENAME}...")
         try:
-            # We need to use a proper User-Agent sometimes for GitHub
             opener = urllib.request.build_opener()
             opener.addheaders = [('User-agent', 'Mozilla/5.0')]
             urllib.request.install_opener(opener)
