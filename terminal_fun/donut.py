@@ -6,7 +6,6 @@ def run_donut():
     a = 0
     b = 0
     
-    # Hide cursor
     sys.stdout.write("\x1b[?25l")
     sys.stdout.flush()
 
@@ -55,7 +54,6 @@ def run_donut():
     except KeyboardInterrupt:
         pass
     finally:
-        # Show cursor and clear screen
         sys.stdout.write("\x1b[?25h\x1b[2J\x1b[H")
         sys.stdout.flush()
 

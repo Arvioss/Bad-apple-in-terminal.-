@@ -12,6 +12,7 @@ pip install -e .
 
 - `donut`: Runs the classic spinning ASCII donut animation.
 - `bad-apple`: Plays the "Bad Apple!!" video in your terminal.
+- `lotm`: Plays the "Lord of the Mysteries" trailer in your terminal.
 
 ## Requirements
 

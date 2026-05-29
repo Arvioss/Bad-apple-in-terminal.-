@@ -6,7 +6,6 @@ def main():
     a = 0
     b = 0
     
-    # Precompute cos and sin might be faster, but let's keep it simple first
     while True:
         z = [0] * 1760
         b_screen = [' '] * 1760
@@ -49,9 +48,8 @@ def main():
         time.sleep(0.01)
 
 if __name__ == "__main__":
-    # Clear screen initially
     print("\x1b[2J", end="")
     try:
         main()
     except KeyboardInterrupt:
-        print("\x1b[2J\x1b[HAnimation stopped.")
+        print("\x1b[2J\x1b[H")

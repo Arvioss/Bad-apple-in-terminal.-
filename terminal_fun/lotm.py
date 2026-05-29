@@ -3,8 +3,8 @@ import time
 import sys
 import urllib.request
 
-VIDEO_URL = "https://github.com/bad-apple-lab/Bad-Apple/raw/main/badapple.mp4"
-VIDEO_FILENAME = os.path.expanduser("~/.bad_apple.mp4")
+VIDEO_URL = "https://github.com/Arvioss/Lotm/raw/main/videoplayback.mp4"
+VIDEO_FILENAME = os.path.expanduser("~/.lotm_trailer.mp4")
 ASCII_CHARS = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"]
 
 def download_video():
@@ -17,7 +17,7 @@ def download_video():
         except Exception:
             sys.exit(1)
 
-def run_bad_apple():
+def run_lotm():
     try:
         import cv2
         import numpy as np
@@ -77,4 +77,4 @@ def run_bad_apple():
         sys.stdout.flush()
 
 if __name__ == "__main__":
-    run_bad_apple()
+    run_lotm()
