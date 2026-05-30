@@ -4,30 +4,47 @@ import sys
 import urllib.request
 
 VIDEO_URL = "https://github.com/bad-apple-lab/Bad-Apple/raw/main/badapple.mp4"
+AUDIO_URL = "https://raw.githubusercontent.com/CalvinLoke/bad-apple/master/bad-apple-audio.mp3"
 VIDEO_FILENAME = os.path.expanduser("~/.bad_apple.mp4")
+AUDIO_FILENAME = os.path.expanduser("~/.bad_apple.mp3")
 ASCII_CHARS = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"]
 
-def download_video():
-    if not os.path.exists(VIDEO_FILENAME):
-        try:
-            opener = urllib.request.build_opener()
-            opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-            urllib.request.install_opener(opener)
-            urllib.request.urlretrieve(VIDEO_URL, VIDEO_FILENAME)
-        except Exception:
-            sys.exit(1)
+def download_assets():
+    for url, filename in [(VIDEO_URL, VIDEO_FILENAME), (AUDIO_URL, AUDIO_FILENAME)]:
+        if not os.path.exists(filename):
+            try:
+                opener = urllib.request.build_opener()
+                opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+                urllib.request.install_opener(opener)
+                urllib.request.urlretrieve(url, filename)
+            except Exception as e:
+                print(f"Error downloading {filename}: {e}")
+                sys.exit(1)
 
 def run_bad_apple():
     try:
         import cv2
         import numpy as np
     except ImportError:
+        print("Please install opencv-python and numpy.")
         sys.exit(1)
 
-    download_video()
+    # Try to import audio dependencies
+    has_audio = False
+    try:
+        import pygame
+        pygame.mixer.init()
+        has_audio = True
+    except ImportError:
+        print("Note: Install 'pygame' for audio support.")
+    except Exception as e:
+        print(f"Note: Audio initialization failed: {e}")
+
+    download_assets()
     
     cap = cv2.VideoCapture(VIDEO_FILENAME)
     if not cap.isOpened():
+        print(f"Error: Could not open video file {VIDEO_FILENAME}")
         return
 
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -41,6 +58,15 @@ def run_bad_apple():
 
     width = min(columns - 2, 100)
 
+    # Initialize audio
+    if has_audio:
+        try:
+            pygame.mixer.music.load(AUDIO_FILENAME)
+            pygame.mixer.music.play()
+        except Exception as e:
+            print(f"Error playing audio: {e}")
+            has_audio = False
+
     sys.stdout.write("\033[?25l")
     sys.stdout.flush()
 
@@ -51,6 +77,7 @@ def run_bad_apple():
                 break
 
             start_time = time.time()
+            
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
             h, w = gray.shape
@@ -72,6 +99,8 @@ def run_bad_apple():
     except KeyboardInterrupt:
         pass
     finally:
+        if has_audio:
+            pygame.mixer.music.stop()
         cap.release()
         sys.stdout.write("\033[?25h\033[2J\033[H")
         sys.stdout.flush()

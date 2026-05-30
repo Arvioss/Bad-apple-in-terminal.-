@@ -11,7 +11,7 @@ pip install -e .
 ## Commands
 
 - `donut`: Runs the classic spinning ASCII donut animation.
-- `bad-apple`: Plays the "Bad Apple!!" video in your terminal.
+- `bad-apple`: Plays the "Bad Apple!!" video in your terminal with audio!
 - `lotm`: Plays the "Lord of the Mysteries" trailer in your terminal.
 
 ## Requirements
@@ -19,7 +19,7 @@ pip install -e .
 - Python 3
 - `numpy`
 - `opencv-python`
-- gdown
-
+- `pygame` (for audio support)
+- `gdown` (for asset management)
 
 Enjoy!
