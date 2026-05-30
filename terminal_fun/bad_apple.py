@@ -2,6 +2,7 @@ import os
 import time
 import sys
 import urllib.request
+import subprocess
 
 VIDEO_URL = "https://github.com/bad-apple-lab/Bad-Apple/raw/main/badapple.mp4"
 AUDIO_URL = "https://raw.githubusercontent.com/CalvinLoke/bad-apple/master/bad-apple-audio.mp3"
@@ -29,17 +30,6 @@ def run_bad_apple():
         print("Please install opencv-python and numpy.")
         sys.exit(1)
 
-    # Try to import audio dependencies
-    has_audio = False
-    try:
-        import pygame
-        pygame.mixer.init()
-        has_audio = True
-    except ImportError:
-        print("Note: Install 'pygame' for audio support.")
-    except Exception as e:
-        print(f"Note: Audio initialization failed: {e}")
-
     download_assets()
     
     cap = cv2.VideoCapture(VIDEO_FILENAME)
@@ -58,14 +48,19 @@ def run_bad_apple():
 
     width = min(columns - 2, 100)
 
-    # Initialize audio
-    if has_audio:
-        try:
-            pygame.mixer.music.load(AUDIO_FILENAME)
-            pygame.mixer.music.play()
-        except Exception as e:
-            print(f"Error playing audio: {e}")
-            has_audio = False
+    # Initialize audio with mpv
+    audio_process = None
+    try:
+        # --no-video ensures only audio is played, compatible with termux
+        audio_process = subprocess.Popen(
+            ["mpv", "--no-video", AUDIO_FILENAME],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+    except FileNotFoundError:
+        print("Note: 'mpv' not found. Install it for audio support.")
+    except Exception as e:
+        print(f"Note: Could not start audio: {e}")
 
     sys.stdout.write("\033[?25l")
     sys.stdout.flush()
@@ -99,8 +94,9 @@ def run_bad_apple():
     except KeyboardInterrupt:
         pass
     finally:
-        if has_audio:
-            pygame.mixer.music.stop()
+        if audio_process:
+            audio_process.terminate()
+            audio_process.wait()
         cap.release()
         sys.stdout.write("\033[?25h\033[2J\033[H")
         sys.stdout.flush()

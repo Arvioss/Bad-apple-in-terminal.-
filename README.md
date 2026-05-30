@@ -19,7 +19,7 @@ pip install -e .
 - Python 3
 - `numpy`
 - `opencv-python`
-- `pygame` (for audio support)
+- `mpv` (external system dependency, for audio support)
 - `gdown` (for asset management)
 
 Enjoy!

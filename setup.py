@@ -7,7 +7,6 @@ setup(
     install_requires=[
         "numpy",
         "opencv-python",
-        "pygame",
     ],
     entry_points={
         "console_scripts": [
